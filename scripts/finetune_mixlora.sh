@@ -3,8 +3,8 @@
 PROMPT_VERSION=v1
 MODEL_VERSION="vicuna-v1-3-7b"
 
-image_folder=/path/to/vision-flan-images/
-data_path=/path/to/vision-flan-json/
+image_folder=/root/autodl-tmp/MixLoRA/data
+data_path=/root/autodl-tmp/MixLoRA/data/train_dataset.json
 
 cond_type=$1 # input or input_lora_a_param 
 n_experts=$2
@@ -17,19 +17,19 @@ lora_alpha=$(($n_experts * 2))
 deepspeed --master_port=$port llava/train/train_mem_cmoa.py \
     --deepspeed scripts/zero3.json \
     --lora_enable True \
-    --model_name_or_path "lmsys/vicuna-7b-v1.3" \
+    --model_name_or_path "/root/autodl-tmp/model/vicuna-7b-v1.3" \
     --version $PROMPT_VERSION \
     --data_path $data_path \
     --image_folder $image_folder \
-    --vision_tower openai/clip-vit-large-patch14 \
-    --pretrain_mm_mlp_adapter ./checkpoints/llava-$MODEL_VERSION-pretrain/mm_projector.bin \
+    --vision_tower /root/autodl-tmp/model/clip-vit-large-patch14 \
+    --pretrain_mm_mlp_adapter /root/autodl-tmp/model/llava-pretrain-vicuna-7b-v1.3/mm_projector.bin \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --bf16 True \
-    --output_dir ./checkpoints/ft_vision-flan_mixlora_${cond_type}_E-${n_experts}_r-${n_selected} \
+    --output_dir ./checkpoints/stance_mixlora_${cond_type}_E-${n_experts}_r-${n_selected}_attribute \
     --num_train_epochs 3 \
-    --per_device_train_batch_size 16 \
+    --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 2 \
     --evaluation_strategy "no" \
@@ -58,6 +58,6 @@ deepspeed --master_port=$port llava/train/train_mem_cmoa.py \
     --mix_mm_projector False \
     --add_noise False \
     --mix_loraA True \
-    --mix_start_layer 0
+    --mix_start_layer 0 \
 
 # e.g., sh scripts/finetune_lora_cmoa.sh multiinstruct input 96 64 False False True
