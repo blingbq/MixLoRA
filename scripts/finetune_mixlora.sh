@@ -17,11 +17,11 @@ lora_alpha=$(($n_experts * 2))
 deepspeed --master_port=$port llava/train/train_mem_cmoa.py \
     --deepspeed scripts/zero3.json \
     --lora_enable True \
-    --model_name_or_path "/root/autodl-tmp/model/vicuna-7b-v1.3" \
+    --model_name_or_path "/root/autodl-tmp/model/Xorbits/vicuna-7b-v1.3" \
     --version $PROMPT_VERSION \
     --data_path $data_path \
     --image_folder $image_folder \
-    --vision_tower /root/autodl-tmp/model/clip-vit-large-patch14 \
+    --vision_tower /root/autodl-tmp/model/AI-ModelScope/clip-vit-large-patch14 \
     --pretrain_mm_mlp_adapter /root/autodl-tmp/model/llava-pretrain-vicuna-7b-v1.3/mm_projector.bin \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
