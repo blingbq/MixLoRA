@@ -35,13 +35,14 @@ def eval_model(args):
     disable_torch_init()
     model_name = get_model_name_from_path(args.model_path)
 
-    answers_dir = Path(args.model_path) / 'results' / "mm_tasks"
+    answers_dir = Path(args.model_path) / 'results' / "union"
     answers_dir.mkdir(parents=True, exist_ok=True)
 
     tokenizer, model, image_processor, context_len, n_experts = load_pretrained_model(
         args.model_path, args.model_base, model_name, eval_mixlora=args.eval_mixlora)
 
-    file_list = EVAL_TASKS
+    # file_list = EVAL_TASKS
+    file_list = ['union']
     print("file_list: ", file_list)
     question_dir = args.question_dir
     for question_file in file_list:
@@ -91,11 +92,28 @@ def eval_model(args):
             image = Image.open(image_file)
             qs = line["prompt"]
             cur_prompt = qs
-            if model.config.mm_use_im_start_end:
-                qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + \
-                    DEFAULT_IM_END_TOKEN + '\n' + qs
+            # if model.config.mm_use_im_start_end:
+            #     qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + \
+            #         DEFAULT_IM_END_TOKEN + '\n' + qs
+            # else:
+            #     qs = DEFAULT_IMAGE_TOKEN + '\n' + qs
+
+            # 仅插入一对图像标记，避免重复图像索引
+            # if getattr(model.config, "mm_use_im_start_end", False):
+            #     qs = f"{DEFAULT_IM_START_TOKEN}{DEFAULT_IMAGE_TOKEN}{DEFAULT_IM_END_TOKEN}\n{qs}"
+            # else:
+            #     qs = f"{DEFAULT_IMAGE_TOKEN}\n{qs}"
+
+# ---- Fix duplicated <image> tokens ----
+            if "<image>" not in qs:
+                if getattr(model.config, "mm_use_im_start_end", False):
+                    qs = f"{DEFAULT_IM_START_TOKEN}{DEFAULT_IMAGE_TOKEN}{DEFAULT_IM_END_TOKEN}\n{qs}"
+                else:
+                    qs = f"{DEFAULT_IMAGE_TOKEN}\n{qs}"
             else:
-                qs = DEFAULT_IMAGE_TOKEN + '\n' + qs
+                print(f"[DEBUG] Skipping extra image token for sample with existing <image> tag.")
+# ---------------------------------------
+
 
             if args.in_context:
                 qs = f"[Example]: [Input]: {in_context_q} [Output]: {in_context_a}||||{qs}"
@@ -108,6 +126,7 @@ def eval_model(args):
 
             input_ids = tokenizer_image_token(
                 prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
+            # print(f"[DEBUG] {idx} image token count:", (input_ids == IMAGE_TOKEN_INDEX).sum().item())
 
             image_tensor = image_processor.preprocess(
                 image, return_tensors='pt')['pixel_values'][0]
@@ -145,7 +164,7 @@ def eval_model(args):
                     top_p=args.top_p,
                     num_beams=args.num_beams,
                     # no_repeat_ngram_size=3,
-                    max_new_tokens=1024,
+                    max_new_tokens=512,
                     use_cache=True)
 
             if getattr(model.config, "cond_type", None):

@@ -4,7 +4,7 @@ PROMPT_VERSION=v1
 MODEL_VERSION="vicuna-v1-3-7b"
 
 image_folder=/root/autodl-tmp/MixLoRA/data
-data_path=/root/autodl-tmp/MixLoRA/data/train_dataset.json
+data_path=/root/autodl-tmp/MixLoRA/data/train_union.json
 
 cond_type=$1 # input or input_lora_a_param 
 n_experts=$2
@@ -27,14 +27,14 @@ deepspeed --master_port=$port llava/train/train_mem_cmoa.py \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --bf16 True \
-    --output_dir ./checkpoints/stance_mixlora_${cond_type}_E-${n_experts}_r-${n_selected}_attribute \
-    --num_train_epochs 3 \
+    --output_dir ./checkpoints/stance_mixlora_${cond_type}_E-${n_experts}_r-${n_selected}_union2 \
+    --num_train_epochs 1 \
     --per_device_train_batch_size 8 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 2 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 477 \
+    --save_steps 1431 \
     --save_total_limit 100 \
     --learning_rate 4e-5 \
     --weight_decay 0. \
